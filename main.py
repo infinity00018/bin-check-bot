@@ -6,6 +6,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # Load environment variables
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+print("BOT_TOKEN:", BOT_TOKEN)
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # In-memory user database
