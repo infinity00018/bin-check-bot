@@ -1,4 +1,7 @@
-import telebot import os from dotenv import load_dotenv from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import telebot
+import os
+from dotenv import load_dotenv
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 load_dotenv() BOT_TOKEN = os.getenv("BOT_TOKEN") bot = telebot.TeleBot(BOT_TOKEN)
 
