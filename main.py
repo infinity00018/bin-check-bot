@@ -14,7 +14,8 @@ users = {}
 
 # Referral and withdrawal config
 
-REFERRAL_REWARD = 0.0015 WITHDRAWAL_THRESHOLD = 0.1
+REFERRAL_REWARD = 0.0015
+WITHDRAWAL_THRESHOLD = 0.1
 
 Placeholder for required channels (user can add later)
 
