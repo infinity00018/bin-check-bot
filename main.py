@@ -12,7 +12,7 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 users = {}
 
-Referral and withdrawal config
+# Referral and withdrawal config
 
 REFERRAL_REWARD = 0.0015 WITHDRAWAL_THRESHOLD = 0.1
 
