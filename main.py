@@ -17,7 +17,7 @@ users = {}
 REFERRAL_REWARD = 0.0015
 WITHDRAWAL_THRESHOLD = 0.1
 
-Placeholder for required channels (user can add later)
+# # Placeholder for required channels (user can add later)
 
 REQUIRED_CHANNELS = []  # Example: ['@damn_airdrops', '@channel2']
 
