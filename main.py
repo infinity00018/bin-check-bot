@@ -1,90 +1,62 @@
-import telebot
-import json
-import os
+import telebot import os from dotenv import load_dotenv from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# Telegram bot token
-BOT_TOKEN = "7856671589:AAGWcGfJCSoz1Ao-Hqu3nhEsF75R3HeP95M"
-bot = telebot.TeleBot(BOT_TOKEN)
+load_dotenv() BOT_TOKEN = os.getenv("BOT_TOKEN") bot = telebot.TeleBot(BOT_TOKEN)
 
-# Channel usernames (can be empty list if you add later)
-CHANNELS = [
-    # "@channel1", "@channel2", ...
-]
+User database
 
-USERS_FILE = "users.json"
+users = {}
 
-# Load user data from file
-def load_users():
-    if not os.path.exists(USERS_FILE):
-        return {}
-    with open(USERS_FILE, "r") as f:
-        return json.load(f)
+Referral and withdrawal config
 
-# Save user data to file
-def save_users(data):
-    with open(USERS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+REFERRAL_REWARD = 0.0015 WITHDRAWAL_THRESHOLD = 0.1
 
-# Check if user joined all required channels
-def is_subscribed(user_id):
-    for channel in CHANNELS:
-        try:
-            status = bot.get_chat_member(channel, user_id).status
-            if status not in ["member", "administrator", "creator"]:
-                return False
-        except:
-            return False
-    return True
+Placeholder for required channels (user can add later)
 
-@bot.message_handler(commands=["start"])
-def start(message):
-    user_id = str(message.from_user.id)
-    users = load_users()
+REQUIRED_CHANNELS = []  # Example: ['@damn_airdrops', '@channel2']
 
-    ref_id = None
-    if len(message.text.split()) > 1:
-        ref_id = message.text.split()[1]
+Check if user is in required channels (dummy for now)
 
-    if user_id not in users:
-        users[user_id] = {"usdt": 0.0, "ref_by": ref_id}
-        if ref_id and ref_id in users:
-            users[ref_id]["usdt"] += 0.0015
-        save_users(users)
+def is_user_in_required_channels(user_id): return True  # Simulate that user is always in channels for now
 
-    if CHANNELS:
-        if not is_subscribed(user_id):
-            channels_list = "\n".join([f"➡️ {ch}" for ch in CHANNELS])
-            bot.send_message(message.chat.id, f"📢 Please join these channels first:\n{channels_list}\n\nThen press /start again.")
-            return
+@bot.message_handler(commands=['start']) def handle_start(message): user_id = message.from_user.id ref_id = None if len(message.text.split()) > 1: ref_id = message.text.split()[1]
 
-    bot.send_message(message.chat.id,
-        f"👋 Welcome {message.from_user.first_name}!\n"
-        "🎁 Earn 0.0015 USDT per referral.\n"
-        "💸 Withdraw when you reach 0.1 USDT!\n\n"
-        "👥 Use your link to refer:\n"
-        f"https://t.me/{bot.get_me().username}?start={user_id}"
-    )
+if user_id not in users:
+    users[user_id] = {"balance": 0.0, "referrals": []}
+    if ref_id and ref_id.isdigit():
+        ref_id = int(ref_id)
+        if ref_id != user_id and ref_id in users:
+            users[ref_id]['balance'] += REFERRAL_REWARD
+            users[ref_id]['referrals'].append(user_id)
 
-@bot.message_handler(commands=["balance"])
-def balance(message):
-    user_id = str(message.from_user.id)
-    users = load_users()
-    usdt = users.get(user_id, {}).get("usdt", 0.0)
-    bot.send_message(message.chat.id, f"💰 Your Balance: {usdt:.4f} USDT")
+if not is_user_in_required_channels(user_id):
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("Join Required Channels", url="https://t.me/yourchannel"))
+    bot.send_message(user_id, "Please join the required channels to use the bot.", reply_markup=markup)
+    return
 
-@bot.message_handler(commands=["withdraw"])
-def withdraw(message):
-    user_id = str(message.from_user.id)
-    users = load_users()
-    usdt = users.get(user_id, {}).get("usdt", 0.0)
+markup = InlineKeyboardMarkup()
+markup.add(InlineKeyboardButton("💰 Balance", callback_data="balance"))
+markup.add(InlineKeyboardButton("👥 Referrals", callback_data="referrals"))
+markup.add(InlineKeyboardButton("💸 Withdraw", callback_data="withdraw"))
+bot.send_message(user_id, "Welcome to AutoPay Bot!", reply_markup=markup)
 
-    if usdt < 0.1:
-        bot.send_message(message.chat.id,
-            f"❌ Minimum 0.1 USDT required to withdraw.\n💸 Your current balance: {usdt:.4f} USDT")
+@bot.callback_query_handler(func=lambda call: True) def handle_callback(call): user_id = call.from_user.id data = call.data
+
+if data == "balance":
+    balance = users[user_id]['balance']
+    bot.answer_callback_query(call.id, f"Your balance: {balance:.4f} USDT")
+
+elif data == "referrals":
+    refs = users[user_id]['referrals']
+    bot.answer_callback_query(call.id, f"You referred {len(refs)} user(s).")
+
+elif data == "withdraw":
+    balance = users[user_id]['balance']
+    if balance >= WITHDRAWAL_THRESHOLD:
+        bot.send_message(user_id, "✅ Your withdrawal request has been submitted!\n(For educational purposes only – no real payment.)")
+        users[user_id]['balance'] = 0.0  # Reset after fake withdrawal
     else:
-        bot.send_message(message.chat.id,
-            "✅ Withdrawal request received!\n💳 (This is a simulation — no real payout.)")
+        bot.send_message(user_id, f"❌ Minimum withdrawal is {WITHDRAWAL_THRESHOLD} USDT.\nYour current balance: {balance:.4f} USDT")
 
-# Run the bot
-print("🤖 Bot is running...")
 bot.infinity_polling()
+
